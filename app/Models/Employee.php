@@ -62,4 +62,7 @@ class Employee extends Model
     public function NoTestWork(){
         return $this->hasMany('App\Models\NoTestWork','employee_id','id');
     }
+    public function ProgramTeamRoleTask(){
+        return $this->hasMany('App\Models\ProgramTeamRoleTask','employee_id','id');
+    }
 }

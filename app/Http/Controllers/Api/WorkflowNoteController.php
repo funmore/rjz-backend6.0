@@ -34,8 +34,15 @@ class WorkflowNoteController extends Controller
         if(sizeof($workflow_notes)==0) {
             return json_encode($ret);
         }
-        $workflow_noteToArray=$workflow_notes->map(function($workflow_note){
-
+        $workflow_noteToArray=$workflow_notes
+            ->filter(function($workflow_note){
+                //此处添加filter是为了过滤掉已经被删除的node的workflow_note
+                return Node::find($workflow_note->from_node_id)!=null&&Node::find($workflow_note->to_node_id)!=null;
+        })
+            ->map(function($workflow_note){
+            $merge_array=array( 'employee_name'=>Employee::find($workflow_note->employee_id)->name,
+                                'from_node_name'=>Node::find($workflow_note->from_node_id)->name,
+                                'to_node_name'=>Node::find($workflow_note->to_node_id)->name);
             return collect($workflow_note->toArray())->only([
                 'id',
                 'employee_id',
@@ -43,9 +50,7 @@ class WorkflowNoteController extends Controller
                 'note',
                 'from_node_id',
                 'to_node_id',
-                'created_at'])->merge(array( 'employee_name'=>Employee::find($workflow_note->employee_id)->name,
-                                                 'from_node_name'=>Node::find($workflow_note->from_node_id)->name,
-                                                 'to_node_name'=>Node::find($workflow_note->to_node_id)->name))->all();
+                'created_at'])->merge($merge_array)->all();
          })->sortBy('created_at')->reverse();
 
 

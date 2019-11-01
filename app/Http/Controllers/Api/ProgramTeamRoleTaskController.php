@@ -15,6 +15,7 @@ use App\Models\Node;
 use Illuminate\Database\Eloquent\Collection;
 use App\Libraries\PV;
 use App\Models\Employee;
+use App\Models\Program;
 
 
 
@@ -137,25 +138,38 @@ class ProgramTeamRoleTaskController extends Controller
      */
     public function store(Request $request)
     {
-        $ret = array('success'=>0, 'note'=>null,'total'=>0,'items'=>null );
+        $ret = array('success'=>0, 'note'=>null,'total'=>0,'items'=>null,'isOkay'=>true );
 
         $postData=$request->all();
 
-        //根据ProgramTeamRole来定制各自的ProgramTeamRoleTask，而不是Employee!  因为Employee 有可能在ProgramTeamRole中重复！
-        $ptr=ProgramTeamRole::find($postData['programteamrole_id']);
-        $ptr_note = new ProgramTeamRoleTask(array(  'task'      => $postData['task'],
-                                                    'before_node_id'=> $postData['before_node_id'],
-                                                    'due_day'  => $postData['due_day'],
-                                                    'overdue_reason'=>$postData['overdue_reason'],
-                                                    'note'  => $postData['note'],
-                                                    'state' =>$postData['state'],
-                                                    'ratio'=>$postData['ratio'],
-                                                    'score'=>$postData['score'],
-                                            ));
-        $ptr->ProgramTeamRoleTask()->save($ptr_note);
+        if($postData['programBasicId']==null){
+            $ret['isOkay']=false;
+            $ret['note']='无此项目';
+            return json_encode($ret);
+        }
+        $program=Program::find($postData['programBasicId']);
+        if($program==null){
+            $ret['isOkay']=false;
+            $ret['note']='无此项目';
+            return json_encode($ret);
+        }
+        $ptr_note = new ProgramTeamRoleTask();
+        foreach($ptr_note->getFillable() as $key => $value){
+            if(array_key_exists($value,$postData)&&$postData[$value]!=null){
+                $ptr_note[$value]=$postData[$value];
+            }
+        }
+        if($ptr_note['before_node_id']==null){
+            $ret['isOkay']=false;
+            $ret['note']='未指定所属节点';
+            return json_encode($ret);
+        }
+        $ptr_note->save();
         $ptr_note=collect($ptr_note->toArray())->only([
              'id',
              'task',
+             'employee_id',
+             'role_type',
              'before_node_id',
              'due_day',
              'overdue_reason',
@@ -164,29 +178,18 @@ class ProgramTeamRoleTaskController extends Controller
              'ratio',
              'score',
              'created_at',
-             'updated_at'])->put('before_node_name',Node::find($ptr_note->before_node_id)->name)->all();
+             'updated_at'])
+            ->put('before_node_name',Node::find($ptr_note->before_node_id)->name)
+            ->put('employee_name',Employee::find($ptr_note->employee_id)!=null?Employee::find($ptr_note->employee_id)->name:null)
+            ->all();
         $ret['items']=$ptr_note;
         $ret['total']=1;
 
-        $program=$ptr->Program;
         $token = $request->header('AdminToken');
         $employee =Token::where('token',$token)->first()->Employee;
 
         $pv = new PV();
         $pv->storePvlog($program,$employee,'新增任务');
-
-        // $pvstates= Pvstate::where('program_id',$program->id)->where('employee_id','!=',$employee->id)->get();
-        // if(sizeof($pvstates)!=0) {
-        //     foreach ($pvstates as $pvstate) {
-        //         $pvstate->is_read = 0;
-        //         $pvstate->save();
-        //     }
-        // }
-
-        // $pvlog = new Pvlog(array( 'changer_id'      => $employee->id,
-        //                           'change_note'=> '新增任务'
-        // ));
-        // $program->Pvlog()->save($pvlog);
 
         return json_encode($ret);
     }
@@ -252,20 +255,31 @@ class ProgramTeamRoleTaskController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $token = $request->header('AdminToken');
+        $employee =Token::where('token',$token)->first()->Employee;
         $ret = array('success'=>0, 'note'=>null,'total'=>0,'items'=>null );
-
+        $update_log=array();
         $postData=$request->all();
 
+        // if(array_key_exists('plan_start_time',$postData)&&$postData['plan_start_time']!=''){
+        //     $program['plan_start_time'] = $postData['plan_start_time'];
+        // }
+        // if(array_key_exists('plan_end_time',$postData)&&$postData['plan_end_time']!=''){
+        //         $program['plan_end_time'] = $postData['plan_end_time'];
+        // }
+        // $program->save();
+
         $ptr_note=ProgramTeamRoleTask::find($id);
-        $ptr_note->task=$postData['task'];
-        $ptr_note->before_node_id=$postData['before_node_id'];
-        $ptr_note->due_day=$postData['due_day'];
-        $ptr_note->overdue_reason=$postData['overdue_reason'];
-        $ptr_note->note=$postData['note'];
-        $ptr_note->state=$postData['state'];
-        $ptr_note->ratio=$postData['ratio'];
-        $ptr_note->score=$postData['score'];
+
+        foreach($ptr_note->getFillable() as $key => $value){
+            if(array_key_exists($value,$postData)&&$ptr_note[$value]!=$postData[$value]){
+                $update_log[$value]['old']=$postData[$value];
+                $ptr_note[$value]=$postData[$value];
+                $update_log[$value]['new']=$postData[$value];
+            }
+        }
         $ptr_note->save();
+
 
         $program=$ptr_note->ProgramTeamRole->Program;
         $token = $request->header('AdminToken');

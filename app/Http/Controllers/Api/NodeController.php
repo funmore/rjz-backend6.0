@@ -203,7 +203,12 @@ class NodeController extends Controller
                 $node->array_index=$node->array_index -1;
                 $node->save();
             }
-            
+        }
+        //如果是删除节点操作，需要保证节点的数量大于等于active值
+        //貌似Laravel是异步删除node的机制导致代码运行到这的sizeof($workflow->Node)的值为删除前的数值
+        if(sizeof($workflow->Node)<=$workflow->active+1){
+            $workflow->active =sizeof($workflow->Node)-2;
+            $workflow->save();
         }
         
         

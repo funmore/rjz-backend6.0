@@ -202,8 +202,95 @@ class ProgramController extends Controller
         }
         $ret['program_role']=$programRole;
 
+        return json_encode($ret);
 
 
+    }
+
+     /**
+     * 获取项目组的成员
+     *
+     * @param 项目id int  $id  
+     * @return \Illuminate\Http\Response
+     * @return     s_team:[],   //short for strict_teamrole 只局限于项目组长和项目组员
+     * @return     g_team:[],    //short for general_teamrole 标准项目组  项目组长&项目组员&质量&配置管理&监督人员
+     * @return     w_team:[],   //short for wide_teamrole  项目组长&项目组员&质量&配置管理&监督人员  型号负责人&项目组长
+     * @return     d_team:[]    //short for dynamic_teamrole 用户自定义项目组长 for future use
+     */
+    public function team($id,Request $request)
+    {
+        $token = $request->header('AdminToken');
+        $employee =Token::where('token',$token)->first()->Employee;
+
+        $ret = array('success'=>0, 'note'=>null,'team'=>null,'isOkay'=>true );
+
+        $program = Program::find($id);
+        if($program==null){
+                $ret['note']="项目不存在";
+                $ret['isOkay']=false;
+                return json_encode($ret);
+        }
+
+        $s_team=array();
+        $g_team=array();
+        $w_team=array();
+        $d_team=array();
+        if(sizeof($program->ProgramTeamRole)!=0){
+                $g_team=$program->ProgramTeamRole->map(function($programteamrole){
+                        $employee_name=Employee::find($programteamrole->employee_id)==null? null:Employee::find($programteamrole->employee_id)->name;
+                        $employee_id=$programteamrole->employee_id;
+
+                        $item=collect($programteamrole->toArray())->only([
+                                'role'])
+                                ->put('employee_id',$employee_id)
+                                ->put('employee_name',$employee_name)
+                                ->all();
+                        return $item;
+                        })->toArray();
+                $s_team=$program->ProgramTeamRole
+                                ->filter(function($programteamrole){
+                                        return $programteamrole->role=='项目组长'|| $programteamrole->role=='项目组员';
+                                })
+                                ->map(function($programteamrole){
+                                        $employee_name=Employee::find($programteamrole->employee_id)==null? null:Employee::find($programteamrole->employee_id)->name;
+                                        $employee_id=$programteamrole->employee_id;
+                                        $item=collect($programteamrole->toArray())->only([
+                                                'role'])
+                                                ->put('employee_id',$employee_id)
+                                                ->put('employee_name',$employee_name)
+                                                ->all();
+                                        return $item;
+                                        })->toArray();
+
+        }
+        $w_team=$g_team;
+
+
+        $manager=null;
+        $manager['role']='型号负责人';
+        $manager['employee_id']= $program->FlightModel->Employee->id;
+        $manager['employee_name']=$program->FlightModel->Employee->name;
+        array_push($w_team, $manager);
+
+        $teamleader_array=Employee::where('team_id',$program->FlightModel->Employee->team_id)
+                                  ->where('is_teamleader',1)->get();
+        if(sizeof($teamleader_array)!=0){
+                $teamleader_array=$teamleader_array->map(function($teamleader){
+                                $teamleader=null;
+                                $teamleader['role']='工程组长';
+                                $teamleader['employee_id']= $teamleader->id;
+                                $teamleader['employee_name']=$teamleader->name;
+                                return $teamleader;
+                                })->toArray();
+                $w_team=array_merge($w_team,$teamleader_array);
+        }else{
+             //do nothing   
+        }
+
+        $ret['team']['s_team']=$s_team;
+        $ret['team']['g_team']=$g_team;
+        $ret['team']['w_team']=$w_team;
+        $ret['team']['d_team']=$d_team;
 
         return json_encode($ret);
 
