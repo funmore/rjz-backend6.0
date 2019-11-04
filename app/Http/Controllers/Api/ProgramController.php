@@ -88,7 +88,7 @@ class ProgramController extends Controller
 
 
         $manager=$program->FlightModel==null?null:Employee::find($program->FlightModel->employee_id);
-        $program=collect($program->toArray())->only([
+        $program_ret=collect($program->toArray())->only([
                 'id',
                 'overdue_reason',
                 'plan_start_time',
@@ -111,7 +111,9 @@ class ProgramController extends Controller
                 ->all();
 
 
-        $ret['item']=$program;
+        $ret['item']=$program_ret;
+        $log=array('program_id'=>$program->id,'employee_id'=>$employee,'employee_name'=>$employee->name,'name'=>'项目','type'=>'新增','instance_name'=>$program['name'],'content'=>array());
+        $request->attributes->add(['log' => $log]);
         return json_encode($ret);
 
     }
@@ -230,56 +232,63 @@ class ProgramController extends Controller
                 $ret['isOkay']=false;
                 return json_encode($ret);
         }
-
+        $arr_index=0;
         $s_team=array();
         $g_team=array();
         $w_team=array();
         $d_team=array();
         if(sizeof($program->ProgramTeamRole)!=0){
-                $g_team=$program->ProgramTeamRole->map(function($programteamrole){
+                $s_team=$program->ProgramTeamRole
+                                ->filter(function($programteamrole){
+                                        return $programteamrole->role=='项目组长'|| $programteamrole->role=='项目组员';
+                                })
+                                ->map(function($programteamrole)use(&$arr_index){
+                                        $employee_name=Employee::find($programteamrole->employee_id)==null? null:Employee::find($programteamrole->employee_id)->name;
+                                        $employee_id=$programteamrole->employee_id;
+                                        $arr_index=$arr_index+1;
+                                        $item=collect($programteamrole->toArray())->only([
+                                                'role'])
+                                                ->put('employee_id',$employee_id)
+                                                ->put('employee_name',$employee_name)
+                                                ->put('arr_index',$arr_index)
+                                                ->all();
+                                        return $item;
+                                        })->toArray();
+                $g_team=$program->ProgramTeamRole->map(function($programteamrole)use(&$arr_index){
                         $employee_name=Employee::find($programteamrole->employee_id)==null? null:Employee::find($programteamrole->employee_id)->name;
                         $employee_id=$programteamrole->employee_id;
+                        $arr_index=$arr_index+1;
 
                         $item=collect($programteamrole->toArray())->only([
                                 'role'])
                                 ->put('employee_id',$employee_id)
                                 ->put('employee_name',$employee_name)
+                                ->put('arr_index',$arr_index)
                                 ->all();
                         return $item;
                         })->toArray();
-                $s_team=$program->ProgramTeamRole
-                                ->filter(function($programteamrole){
-                                        return $programteamrole->role=='项目组长'|| $programteamrole->role=='项目组员';
-                                })
-                                ->map(function($programteamrole){
-                                        $employee_name=Employee::find($programteamrole->employee_id)==null? null:Employee::find($programteamrole->employee_id)->name;
-                                        $employee_id=$programteamrole->employee_id;
-                                        $item=collect($programteamrole->toArray())->only([
-                                                'role'])
-                                                ->put('employee_id',$employee_id)
-                                                ->put('employee_name',$employee_name)
-                                                ->all();
-                                        return $item;
-                                        })->toArray();
-
         }
         $w_team=$g_team;
 
 
+        $arr_index=$arr_index+1;
         $manager=null;
         $manager['role']='型号负责人';
         $manager['employee_id']= $program->FlightModel->Employee->id;
         $manager['employee_name']=$program->FlightModel->Employee->name;
+        $manager['arr_index']=$arr_index;
         array_push($w_team, $manager);
 
         $teamleader_array=Employee::where('team_id',$program->FlightModel->Employee->team_id)
                                   ->where('is_teamleader',1)->get();
         if(sizeof($teamleader_array)!=0){
-                $teamleader_array=$teamleader_array->map(function($teamleader){
+                $teamleader_array=$teamleader_array->map(function($teamleader)use(&$arr_index){
+                                $arr_index=$arr_index+1;
                                 $teamleader=null;
                                 $teamleader['role']='工程组长';
                                 $teamleader['employee_id']= $teamleader->id;
                                 $teamleader['employee_name']=$teamleader->name;
+                                $teamleader['arr_index']=$arr_index;
                                 return $teamleader;
                                 })->toArray();
                 $w_team=array_merge($w_team,$teamleader_array);
@@ -323,81 +332,86 @@ class ProgramController extends Controller
 
         $postData=$request->all();
 
+        // $program=Program::find($id);
+        // $pv = new PV();
+        // $pv_isset=false;
+
+        // $program->save();
+        // if(array_key_exists('plan_start_time',$postData)&&$postData['plan_start_time']!=''){
+        //         $program['plan_start_time'] = $postData['plan_start_time'];
+        // }
+        // if(array_key_exists('plan_end_time',$postData)&&$postData['plan_end_time']!=''){
+        //         $program['plan_end_time'] = $postData['plan_end_time'];
+        // }
+        // if(array_key_exists('actual_start_time',$postData)&&$postData['actual_start_time']!=''){
+        //         $program['actual_start_time'] = $postData['actual_start_time'];
+        // }
+        // if(array_key_exists('actual_end_time',$postData)&&$postData['actual_end_time']!=''){
+        //         $program['actual_end_time'] = $postData['actual_end_time'];
+        // }
+        // if(array_key_exists('name',$postData)&&$postData['name']!=''){
+        //         $program['name'] = $postData['name'];
+        // }
+        // if(array_key_exists('program_identity',$postData)&&$postData['program_identity']!=''){
+        //         $program['program_identity'] = $postData['program_identity'];
+        // }
+        // if(array_key_exists('model_id',$postData)&&$postData['model_id']!=''){
+        //         $program['model_id'] = $postData['model_id'];
+        // }
+        // if(array_key_exists('program_type',$postData)&&$postData['program_type']!=''){
+        //         $program['program_type'] = $postData['program_type'];
+        // }
+        // if(array_key_exists('classification',$postData)&&$postData['classification']!=''){
+        //         $program['classification'] = $postData['classification'];
+        // }
+        // if(array_key_exists('program_stage',$postData)&&$postData['program_stage']!=''){
+        //         $program['program_stage'] = $postData['program_stage'];
+        // }
+        // if(array_key_exists('dev_type',$postData)&&$postData['dev_type']!=''){
+        //         $program['dev_type'] = $postData['dev_type'];
+        // }
+        // if(array_key_exists('overdue_reason',$postData)&&$postData['overdue_reason']!=''){
+        //         $program['overdue_reason'] = $postData['overdue_reason'];
+        // }
+        // if(array_key_exists('note',$postData)&&$postData['note']!=''){
+        //         $program['note'] = $postData['note'];
+        // }
+        // if(array_key_exists('state',$postData)&&$postData['state']!=''){
+        //         if($program['state']!="正式项目"&&$postData['state']=="正式项目"){
+        //             $ret['noticeArray']=$pv->storePvState($program,$employee);
+        //         }else{
+        //             $pv->storePvlog($program,$employee,'项目信息变更');
+        //             $pv_isset==true;
+        //         }
+        //         $program['state'] = $postData['state'];
+        // }
+        // if(array_key_exists('type',$postData)&&$postData['type']!=''){
+        //         $program['type'] = $postData['type'];
+        // }
+        // if(array_key_exists('ref',$postData)&&$postData['ref']!=''){
+        //         $program['ref'] = $postData['ref'];
+        // }
+        // $program->save();
+
+        // if($pv_isset==false){
+        //     $pv->storePvlog($program,$employee,'项目信息变更');
+        // }
+
         $program=Program::find($id);
-        $pv = new PV();
-        $pv_isset=false;
-        if(array_key_exists('plan_start_time',$postData)&&$postData['plan_start_time']!=''){
-                $program['plan_start_time'] = $postData['plan_start_time'];
-        }
-        if(array_key_exists('plan_end_time',$postData)&&$postData['plan_end_time']!=''){
-                $program['plan_end_time'] = $postData['plan_end_time'];
-        }
-        if(array_key_exists('actual_start_time',$postData)&&$postData['actual_start_time']!=''){
-                $program['actual_start_time'] = $postData['actual_start_time'];
-        }
-        if(array_key_exists('actual_end_time',$postData)&&$postData['actual_end_time']!=''){
-                $program['actual_end_time'] = $postData['actual_end_time'];
-        }
-        if(array_key_exists('name',$postData)&&$postData['name']!=''){
-                $program['name'] = $postData['name'];
-        }
-        if(array_key_exists('program_identity',$postData)&&$postData['program_identity']!=''){
-                $program['program_identity'] = $postData['program_identity'];
-        }
-        if(array_key_exists('model_id',$postData)&&$postData['model_id']!=''){
-                $program['model_id'] = $postData['model_id'];
-        }
-        if(array_key_exists('program_type',$postData)&&$postData['program_type']!=''){
-                $program['program_type'] = $postData['program_type'];
-        }
-        if(array_key_exists('classification',$postData)&&$postData['classification']!=''){
-                $program['classification'] = $postData['classification'];
-        }
-        if(array_key_exists('program_stage',$postData)&&$postData['program_stage']!=''){
-                $program['program_stage'] = $postData['program_stage'];
-        }
-        if(array_key_exists('dev_type',$postData)&&$postData['dev_type']!=''){
-                $program['dev_type'] = $postData['dev_type'];
-        }
-        if(array_key_exists('overdue_reason',$postData)&&$postData['overdue_reason']!=''){
-                $program['overdue_reason'] = $postData['overdue_reason'];
-        }
-        if(array_key_exists('note',$postData)&&$postData['note']!=''){
-                $program['note'] = $postData['note'];
-        }
-        if(array_key_exists('state',$postData)&&$postData['state']!=''){
-                if($program['state']!="正式项目"&&$postData['state']=="正式项目"){
-                    $ret['noticeArray']=$pv->storePvState($program,$employee);
-                }else{
-                    $pv->storePvlog($program,$employee,'项目信息变更');
-                    $pv_isset==true;
-                }
-                $program['state'] = $postData['state'];
-        }
-        if(array_key_exists('type',$postData)&&$postData['type']!=''){
-                $program['type'] = $postData['type'];
-        }
-        if(array_key_exists('ref',$postData)&&$postData['ref']!=''){
-                $program['ref'] = $postData['ref'];
+        $log=array('program_id'=>$program->id,'employee_id'=>$employee,'employee_name'=>$employee->name,'name'=>'项目基本信息','type'=>'更新','instance_name'=>'','content'=>array());
+        $log['instance_name']=$program['name'];
+        foreach($program->getFillable() as $key => $value){
+            if(array_key_exists($value,$postData)&&$program[$value]!=$postData[$value]){
+                $log['content'][$value]['old']=$postData[$value];
+                $program[$value]=$postData[$value];
+                $log['content'][$value]['new']=$postData[$value];
+            }
         }
         $program->save();
 
-        if($pv_isset==false){
-            $pv->storePvlog($program,$employee,'项目信息变更');
+        if(sizeof($log['content'])!=0) {
+                $request->attributes->add(['log' => $log]);
         }
-
-        // $pvstates= Pvstate::where('program_id',$program->id)->where('employee_id','!=',$employee->id)->get();
-        // if(sizeof($pvstates)!=0) {
-        //     foreach ($pvstates as $pvstate) {
-        //         $pvstate->is_read = 0;
-        //         $pvstate->save();
-        //     }
-        // }
-
-        // $pvlog = new Pvlog(array( 'changer_id'      => $employee->id,
-        //                            'change_note'=> '项目信息变更'
-        //                         ));
-        // $program->Pvlog()->save($pvlog);
 
 
         return json_encode($ret);

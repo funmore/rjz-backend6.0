@@ -25,13 +25,14 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return view('welcome');
 });
-Route::group(['middleware' => ['weixin']], function () {
+Route::group(['middleware' => ['weixin','log']], function () {
     Route::get('/api/employee/getInfo','Api\UserController@getInfo');
 
 
     Route::resource('/programedit', 'Api\ProgramEditController');
     Route::get('/customprogramedit', 'Api\ProgramEditController@custom');
     Route::resource('/pre/program', 'Api\PreProgramEditController');
+    Route::resource('/programlog', 'Api\ProgramLogController');
     // Route::get('/pre/program/preshow', 'Api\PreProgramEditController@preshow');
 
     Route::resource('/employee', 'Api\EmployeeController');

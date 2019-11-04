@@ -100,6 +100,8 @@ class SoftwareInfoController extends Controller
         
 
         $ret['items']=$softwareInfoCol;
+        $log=array('program_id'=>$program->id,'employee_id'=>$employee,'employee_name'=>$employee->name,'name'=>'被测件信息','type'=>'新增','instance_name'=>$softwareInfo['name'],'content'=>array());
+        $request->attributes->add(['log' => $log]);
 
         return json_encode($ret);
     }
@@ -175,65 +177,25 @@ class SoftwareInfoController extends Controller
         $employee =Token::where('token',$token)->first()->Employee;
 
 
-        
+        $log=null;
         $postData=$request->all();
         if(array_key_exists('programId',$postData)&&$postData['programId']!=''){
             $member=$postData['data'];
             if(array_key_exists('id',$member)){
                 $softwareInfo=SoftwareInfo::find($member['id']);
-                $softwareInfo->name=$member['name'];
-                $softwareInfo->version_id=$member['version_id'];
-                $softwareInfo->complier=$member['complier'];
-                $softwareInfo->runtime=$member['runtime'];
-                $softwareInfo->size=$member['size'];
-                $softwareInfo->reduced_code_size=$member['reduced_code_size'];
-                $softwareInfo->reduced_reason=$member['reduced_reason'];
-                $softwareInfo->software_cate=$member['software_cate'];
-                $softwareInfo->software_sub_cate=$member['software_sub_cate'];
-                $softwareInfo->cpu_type=$member['cpu_type'];
-                $softwareInfo->code_langu=$member['code_langu'];
-                $softwareInfo->software_usage=$member['software_usage'];
-                $softwareInfo->software_type=$member['software_type'];
-                $softwareInfo->info_typer_id=$employee->id;
+                $log=array('program_id'=>$postData['programId'],'employee_id'=>$employee,'employee_name'=>$employee->name,'name'=>'被测件信息','type'=>'更新','instance_name'=>$softwareInfo['name'],'content'=>array());
+                $log['instance_name']=$softwareInfo['name'];
+                foreach($softwareInfo->getFillable() as $key => $value){
+                    if(array_key_exists($value,$member)&&$softwareInfo[$value]!=$member[$value]){
+                        $log['content'][$value]['old']=$member[$value];
+                        $softwareInfo[$value]=$member[$value];
+                        $log['content'][$value]['new']=$member[$value];
+                    }
+                }
                 $softwareInfo->save();
-            }else {
-                $softwareInfo = new SoftwareInfo(array( 'name'      => $member['name'],
-                    'version_id'=> $member['version_id'],
-                    'complier'  => $member['complier'],
-                    'runtime'  => $member['runtime'],
-                    'size'     => $member['size'],
-                    'reduced_code_size'  => $member['reduced_code_size'],
-                    'reduced_reason'  => $member['reduced_reason'],
-                    'software_cate'  => $member['software_cate'],
-                    'software_sub_cate'  => $member['software_sub_cate'],
-                    'cpu_type'  => $member['cpu_type'],
-                    'code_langu'  => $member['code_langu'],
-                    'software_usage'  => $member['software_usage'],
-                    'software_type'  => $member['software_type'],
-                    'info_typer_id'   =>$employee->id
-                ));
-                $program->SoftwareInfo()->save($softwareInfo);
             }
 
-
-
-        }else{
-            $softwareInfo=SoftwareInfo::find($id);
-            $softwareInfo->name  = $postData['name'];
-            $softwareInfo->version_id= $postData['version_id'];
-            $softwareInfo->complier  = $postData['complier'];
-            $softwareInfo->runtime  = $postData['runtime'];
-            $softwareInfo->size     = $postData['size'];
-            $softwareInfo->reduced_code_size  = $postData['reduced_code_size'];
-            $softwareInfo->reduced_reason  = $postData['reduced_reason'];
-            $softwareInfo->software_cate = $postData['software_cate'];
-            $softwareInfo->software_sub_cate  = $postData['software_sub_cate'];
-            $softwareInfo->cpu_type  = $postData['cpu_type'];
-            $softwareInfo->code_langu  = $postData['code_langu'];
-            $softwareInfo->software_usage  = $postData['software_usage'];
-            $softwareInfo->software_type  = $postData['software_type'];        
-            $softwareInfo->save();
-
+        }
             $program=$softwareInfo->Program;
             $token = $request->header('AdminToken');
             $employee =Token::where('token',$token)->first()->Employee;
@@ -242,8 +204,9 @@ class SoftwareInfoController extends Controller
             if($pv->isPVStateExist($program)){
                 $pv->storePvlog($program,$employee,'被测件信息变更');
             }
+        if(sizeof($log['content'])!=0) {
+            $request->attributes->add(['log' => $log]);
         }
-
         
         return json_encode($ret);
     }

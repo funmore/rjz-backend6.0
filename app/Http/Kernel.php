@@ -62,6 +62,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'wxlogin' => \App\Http\Middleware\WxloginMiddleware::class,
         'weixin' => \App\Http\Middleware\WeixinMiddleware::class,
+        'log' => \App\Http\Middleware\LogMiddleware::class,
     ];
 
     /**
@@ -74,6 +75,7 @@ class Kernel extends HttpKernel
     protected $middlewarePriority = [
         \App\Http\Middleware\WxloginMiddleware::class,
         \App\Http\Middleware\WeixinMiddleware::class,
+        \App\Http\Middleware\LogMiddleware::class,
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         \App\Http\Middleware\Authenticate::class,

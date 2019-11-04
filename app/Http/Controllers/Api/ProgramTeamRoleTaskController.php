@@ -28,40 +28,43 @@ class ProgramTeamRoleTaskController extends Controller
      */
     public function index(Request $request)
     {
-        $ret = array('success'=>0, 'note'=>null,'total'=>0,'items'=>array() );
+        $ret = array('success'=>0, 'note'=>null,'total'=>0,'items'=>array(),'is_okay'=>true  );
 
         $token = $request->header('AdminToken');
         $employee =Token::where('token',$token)->first()->Employee;
         $listQuery=$request->all();
 
-        if(array_key_exists('isOne',$listQuery)&&filter_var($listQuery['isOne'], FILTER_VALIDATE_BOOLEAN)==true){
-            $ptr=ProgramTeamRole::find($_REQUEST['id']);
-            $ptr_notes=$ptr->ProgramTeamRoleTask;
-            if(sizeof($ptr_notes)==0) {
-                return json_encode($ret);
-            }
+        // if(array_key_exists('isOne',$listQuery)&&filter_var($listQuery['isOne'], FILTER_VALIDATE_BOOLEAN)==true){
+        //     $ptr=ProgramTeamRole::find($_REQUEST['id']);
+        //     $ptr_notes=$ptr->ProgramTeamRoleTask;
+        //     if(sizeof($ptr_notes)==0) {
+        //         return json_encode($ret);
+        //     }
 
-            $ptr_notesToArray=$ptr_notes->map(function($ptr_note){
-                return collect($ptr_note->toArray())->only([
-                    'id',
-                    'task',
-                    'before_node_id',
-                    'due_day',
-                    'overdue_reason',
-                    'state',
-                    'note',
-                    'ratio',
-                    'score',
-                    'created_at',
-                    'updated_at'])->put('before_node_name',Node::find($ptr_note->before_node_id)->name)->all();
-            })->sortBy('updated_at')->reverse();
+        //     $ptr_notesToArray=$ptr_notes->map(function($ptr_note){
+        //         return collect($ptr_note->toArray())->only([
+        //             'id',
+        //             'task',
+        //             'before_node_id',
+        //             'due_day',
+        //             'overdue_reason',
+        //             'state',
+        //             'note',
+        //             'ratio',
+        //             'score',
+        //             'created_at',
+        //             'updated_at'])->put('before_node_name',Node::find($ptr_note->before_node_id)->name)->all();
+        //     })->sortBy('updated_at')->reverse();
 
-            $ret['items']=$ptr_notesToArray;
-            $ret['total']=sizeof($ptr_notesToArray);
-            return json_encode($ret);
-        }else if(array_key_exists('type',$listQuery)&&$listQuery['type']!=''){
+        //     $ret['items']=$ptr_notesToArray;
+        //     $ret['total']=sizeof($ptr_notesToArray);
+        //     return json_encode($ret);
+        // }
+        if(array_key_exists('type',$listQuery)&&$listQuery['type']=='NodeTask'){
             $node=Node::find($listQuery['node_id']);
             if($node==null){
+                $ret['is_okay']=false;
+                $ret['note']='无此阶段';
                 return json_encode($ret);
             }
             $node_tasks=$node->ProgramTeamRoleTask;
@@ -69,53 +72,43 @@ class ProgramTeamRoleTaskController extends Controller
                 return json_encode($ret);
             }
             $node_tasksToArray=$node_tasks->map(function($node_task){
-                $employee_name=Employee::find($node_task->ProgramTeamRole->employee_id)->name;
-                return collect($node_task->toArray())->only([
-                    'id',
-                    'task',
-                    'before_node_id',
-                    'due_day',
-                    'overdue_reason',
-                    'state',
-                    'note',
-                    'ratio',
-                    'score',
-                    'created_at',
-                    'updated_at'])
+                $employee_name=Employee::find($node_task->employee_id)==null?null:Employee::find($node_task->employee_id)->name;
+                return collect($node_task->toArray())
                     ->put('employee_name',$employee_name)->all();
             })->sortBy('state')->sortBy('employee_id')->reverse();
             $ret['items']=$node_tasksToArray;
             $ret['total']=sizeof($node_tasksToArray);
             return json_encode($ret);
 
-        }{
-            foreach($listQuery['id'] as $id){
-                $ptr=ProgramTeamRole::find($id);
-                $ptr_notes=$ptr->ProgramTeamRoleTask;
-                if(sizeof($ptr_notes)==0) {
-                    continue;
-                }
-
-                $ptr_notesToArray=$ptr_notes->map(function($ptr_note){
-                    return collect($ptr_note->toArray())->only([
-                        'id',
-                        'task',
-                        'before_node_id',
-                        'due_day',
-                        'overdue_reason',
-                        'state',
-                        'note',
-                        'ratio',
-                        'score',
-                        'created_at',
-                        'updated_at'])->put('before_node_name',Node::find($ptr_note->before_node_id)->name)->all();
-                })->sortBy('updated_at')->reverse()->toArray();
-
-                $ret['items']=array_merge($ret['items'],$ptr_notesToArray);
-                $ret['total']=$ret['total']+sizeof($ptr_notesToArray);
-            }
-            return json_encode($ret);
         }
+        // else{
+        //     foreach($listQuery['id'] as $id){
+        //         $ptr=ProgramTeamRole::find($id);
+        //         $ptr_notes=$ptr->ProgramTeamRoleTask;
+        //         if(sizeof($ptr_notes)==0) {
+        //             continue;
+        //         }
+
+        //         $ptr_notesToArray=$ptr_notes->map(function($ptr_note){
+        //             return collect($ptr_note->toArray())->only([
+        //                 'id',
+        //                 'task',
+        //                 'before_node_id',
+        //                 'due_day',
+        //                 'overdue_reason',
+        //                 'state',
+        //                 'note',
+        //                 'ratio',
+        //                 'score',
+        //                 'created_at',
+        //                 'updated_at'])->put('before_node_name',Node::find($ptr_note->before_node_id)->name)->all();
+        //         })->sortBy('updated_at')->reverse()->toArray();
+
+        //         $ret['items']=array_merge($ret['items'],$ptr_notesToArray);
+        //         $ret['total']=$ret['total']+sizeof($ptr_notesToArray);
+        //     }
+        //     return json_encode($ret);
+        // }
 
 
     }
@@ -138,18 +131,18 @@ class ProgramTeamRoleTaskController extends Controller
      */
     public function store(Request $request)
     {
-        $ret = array('success'=>0, 'note'=>null,'total'=>0,'items'=>null,'isOkay'=>true );
+        $ret = array('success'=>0, 'note'=>null,'total'=>0,'items'=>null,'is_okay'=>true );
 
         $postData=$request->all();
 
         if($postData['programBasicId']==null){
-            $ret['isOkay']=false;
+            $ret['is_okay']=false;
             $ret['note']='无此项目';
             return json_encode($ret);
         }
         $program=Program::find($postData['programBasicId']);
         if($program==null){
-            $ret['isOkay']=false;
+            $ret['is_okay']=false;
             $ret['note']='无此项目';
             return json_encode($ret);
         }
@@ -160,29 +153,17 @@ class ProgramTeamRoleTaskController extends Controller
             }
         }
         if($ptr_note['before_node_id']==null){
-            $ret['isOkay']=false;
+            $ret['is_okay']=false;
             $ret['note']='未指定所属节点';
             return json_encode($ret);
         }
         $ptr_note->save();
-        $ptr_note=collect($ptr_note->toArray())->only([
-             'id',
-             'task',
-             'employee_id',
-             'role_type',
-             'before_node_id',
-             'due_day',
-             'overdue_reason',
-             'state',
-             'note',
-             'ratio',
-             'score',
-             'created_at',
-             'updated_at'])
+        $employee_name=Employee::find($ptr_note->employee_id)->name;
+        $ptr_note_ret=collect($ptr_note->toArray())
             ->put('before_node_name',Node::find($ptr_note->before_node_id)->name)
-            ->put('employee_name',Employee::find($ptr_note->employee_id)!=null?Employee::find($ptr_note->employee_id)->name:null)
+            ->put('employee_name',$employee_name)
             ->all();
-        $ret['items']=$ptr_note;
+        $ret['items']=$ptr_note_ret;
         $ret['total']=1;
 
         $token = $request->header('AdminToken');
@@ -190,6 +171,9 @@ class ProgramTeamRoleTaskController extends Controller
 
         $pv = new PV();
         $pv->storePvlog($program,$employee,'新增任务');
+
+        $log=array('program_id'=>$program->id,'employee_id'=>$employee,'employee_name'=>$employee->name,'name'=>'任务','type'=>'新增','instance_name'=>$ptr_note['task'],'content'=>array());
+        $request->attributes->add(['log' => $log]);
 
         return json_encode($ret);
     }
@@ -216,18 +200,11 @@ class ProgramTeamRoleTaskController extends Controller
         }
 
         $ptr_notesToArray=$ptr_notes->map(function($ptr_note){
-            return collect($ptr_note->toArray())->only([
-                'id',
-                'task',
-                'before_node_id',
-                'due_day',
-                'overdue_reason',
-                'state',
-                'note',
-                'ratio',
-                'score',
-                'created_at',
-                'updated_at'])->put('before_node_name',Node::find($ptr_note->before_node_id)->name)->all();
+            $employee_name=Employee::find($ptr_note->employee_id)->name;
+            return collect($ptr_note->toArray())
+            ->put('before_node_name',Node::find($ptr_note->before_node_id)->name)
+            ->put('employee_name',$employee_name)
+            ->all();
         })->sortBy('updated_at')->reverse();
 
         $ret['items']=$ptr_notesToArray;
@@ -258,48 +235,42 @@ class ProgramTeamRoleTaskController extends Controller
         $token = $request->header('AdminToken');
         $employee =Token::where('token',$token)->first()->Employee;
         $ret = array('success'=>0, 'note'=>null,'total'=>0,'items'=>null );
-        $update_log=array();
+
         $postData=$request->all();
 
-        // if(array_key_exists('plan_start_time',$postData)&&$postData['plan_start_time']!=''){
-        //     $program['plan_start_time'] = $postData['plan_start_time'];
-        // }
-        // if(array_key_exists('plan_end_time',$postData)&&$postData['plan_end_time']!=''){
-        //         $program['plan_end_time'] = $postData['plan_end_time'];
-        // }
-        // $program->save();
-
+        if($postData['programBasicId']==null){
+            $ret['is_okay']=false;
+            $ret['note']='无此项目';
+            return json_encode($ret);
+        }
+        $program=Program::find($postData['programBasicId']);
+        if($program==null){
+            $ret['is_okay']=false;
+            $ret['note']='无此项目';
+            return json_encode($ret);
+        }
+        $log=array('program_id'=>$program->id,'employee_id'=>$employee,'employee_name'=>$employee->name,'name'=>'任务','type'=>'更新','instance_name'=>'','content'=>array());
         $ptr_note=ProgramTeamRoleTask::find($id);
-
+        $log['instance_name']=$ptr_note['task'];
         foreach($ptr_note->getFillable() as $key => $value){
             if(array_key_exists($value,$postData)&&$ptr_note[$value]!=$postData[$value]){
-                $update_log[$value]['old']=$postData[$value];
+                $log['content'][$value]['old']=$postData[$value];
                 $ptr_note[$value]=$postData[$value];
-                $update_log[$value]['new']=$postData[$value];
+                $log['content'][$value]['new']=$postData[$value];
             }
         }
         $ptr_note->save();
 
 
-        $program=$ptr_note->ProgramTeamRole->Program;
         $token = $request->header('AdminToken');
         $employee =Token::where('token',$token)->first()->Employee;
         
         $pv = new PV();
         $pv->storePvlog($program,$employee,'修改任务');
 
-        // $pvstates= Pvstate::where('program_id',$program->id)->where('employee_id','!=',$employee->id)->get();
-        // if(sizeof($pvstates)!=0) {
-        //     foreach ($pvstates as $pvstate) {
-        //         $pvstate->is_read = 0;
-        //         $pvstate->save();
-        //     }
-        // }
-        // $pvlog = new Pvlog(array( 'changer_id'      => $employee->id,
-        //                           'change_note'=> '修改任务'
-        // ));
-        // $program->Pvlog()->save($pvlog);
-
+        if(sizeof($log['content'])!=0) {
+            $request->attributes->add(['log' => $log]);
+        }
         return json_encode($ret);
     }
 
@@ -309,8 +280,20 @@ class ProgramTeamRoleTaskController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy($id,Request $request)
     {
-        //
+        $ret = array('success'=>0, 'note'=>null,'total'=>0,'is_okay'=>true );
+        $token = $request->header('AdminToken');
+        $employee =Token::where('token',$token)->first()->Employee;
+
+        $programTeamRoleTask=ProgramTeamRoleTask::find($id);
+        if($programTeamRoleTask==null){
+            $ret['is_okay']=false;
+            $ret['note']='不存在';
+            return json_encode($ret);
+        }
+        $programTeamRoleTask->delete();
+
+        return json_encode($ret);
     }
 }

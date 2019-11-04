@@ -13,6 +13,7 @@ use App\Models\Workflow;
 use App\Models\Program;
 
 use App\Models\ProgramTeamRole;
+use App\Models\ProgramTeamRoleTask;
 use App\Models\Node;
 use App\Models\Pvlog;
 use App\Models\Pvstate;
@@ -76,6 +77,87 @@ class WorkflowController extends Controller
                                         'array_index'=>  $key
                                         ));
             $program->Workflow->Node()->save($node);
+            switch ($node['type']) {
+                case '软件测试条件准入审查阶段':
+                    $node_task=[
+                        '0'=>['task'=>'环境需求沟通','before_node_id'=>$node['id'],'is_must_choose'=>'否','is_must_complete'=>'否'],
+                        '1'=>['task'=>'接受正式版文档','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '2'=>['task'=>'接受正式版程序','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '3'=>['task'=>'项目建立','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'是'],
+                        '4'=>['task'=>'任务书/需求评审/代码走查问题闭合确认','before_node_id'=>$node['id'],'is_must_choose'=>'否','is_must_complete'=>'否'],
+                        '5'=>['task'=>'完成静态测试','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '6'=>['task'=>'需求文档齐套性/标准符合性/完整性(详细程度)','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否']
+                    ];
+                    foreach($node_task as $key=>$item){
+                        $ptr_note = new ProgramTeamRoleTask();
+                        foreach($ptr_note->getFillable() as $key => $value){
+                            if(array_key_exists($value,$item)&&$item[$value]!=null){
+                                $ptr_note[$value]=$item[$value];
+                            }
+                        }
+                        $ptr_note->save();
+                    }
+                    break;
+                case '测试设计阶段':
+                    $node_task=[
+                        '0'=>['task'=>'测试需求分解','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '1'=>['task'=>'测试用例设计','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'是'],
+                        '2'=>['task'=>'测试需求测试用例内容评审','before_node_id'=>$node['id'],'is_must_choose'=>'否','is_must_complete'=>'否'],
+                        '3'=>['task'=>'测试需求测试用例正式评审','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '4'=>['task'=>'需求/用例正式评审意见闭合确认','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '5'=>['task'=>'全数字/仿真测试平台搭建','before_node_id'=>$node['id'],'is_must_choose'=>'否','is_must_complete'=>'否'],
+                        '6'=>['task'=>'半实物测试环境准备','before_node_id'=>$node['id'],'is_must_choose'=>'否','is_must_complete'=>'否']
+                    ];
+                    foreach($node_task as $key=>$item){
+                        $ptr_note = new ProgramTeamRoleTask();
+                        foreach($ptr_note->getFillable() as $key => $value){
+                            if(array_key_exists($value,$item)&&$item[$value]!=null){
+                                $ptr_note[$value]=$item[$value];
+                            }
+                        }
+                        $ptr_note->save();
+                    }
+                    break;
+                case '测试执行阶段':
+                    $node_task=[
+                        '0'=>['task'=>'静态分析问题单(含代码审查)闭合','before_node_id'=>$node['id'],'is_must_choose'=>'否','is_must_complete'=>'否'],
+                        '1'=>['task'=>'首轮测试完成','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '2'=>['task'=>'问题单确认','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '3'=>['task'=>'回归测试','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'是']
+                    ];
+                    foreach($node_task as $key=>$item){
+                        $ptr_note = new ProgramTeamRoleTask();
+                        foreach($ptr_note->getFillable() as $key => $value){
+                            if(array_key_exists($value,$item)&&$item[$value]!=null){
+                                $ptr_note[$value]=$item[$value];
+                            }
+                        }
+                        $ptr_note->save();
+                    }
+                    break;
+                case '测试总结阶段':
+                    $node_task=[
+                        '0'=>['task'=>'测试总结','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '1'=>['task'=>'具备评审条件','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '2'=>['task'=>'测试报告正式评审','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '3'=>['task'=>'问题单签署','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '4'=>['task'=>'测试报告正式评审意见闭合确认','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '5'=>['task'=>'入库归档','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'是']
+                    ];
+                    foreach($node_task as $key=>$item){
+                        $ptr_note = new ProgramTeamRoleTask();
+                        foreach($ptr_note->getFillable() as $key => $value){
+                            if(array_key_exists($value,$item)&&$item[$value]!=null){
+                                $ptr_note[$value]=$item[$value];
+                            }
+                        }
+                        $ptr_note->save();
+                    }
+                    break;
+                default:
+                    # code...
+                    break;
+            }
         }
 
         $token = $request->header('AdminToken');
@@ -86,17 +168,6 @@ class WorkflowController extends Controller
             $pv->storePvlog($program, $employee, '创建工作流程');
         }
         
-        // $pvstates= Pvstate::where('program_id',$program->id)->where('employee_id','!=',$employee->id)->get();
-        // if(sizeof($pvstates)!=0) {
-        //     foreach ($pvstates as $pvstate) {
-        //         $pvstate->is_read = 0;
-        //         $pvstate->save();
-        //     }
-        // }
-        // $pvlog = new Pvlog(array( 'changer_id'      => $employee->id,
-        //                           'change_note'=> '创建工作流程'
-        // ));
-        // $program->Pvlog()->save($pvlog);
 
 
 

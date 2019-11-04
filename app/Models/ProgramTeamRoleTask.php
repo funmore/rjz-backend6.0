@@ -11,7 +11,7 @@ class ProgramTeamRoleTask extends Model
 
     protected $fillable = [ 'programteamrole_id',
                             'employee_id',
-                            'role_type',
+                            'role',
                             'before_node_id',
                             'task',
                             'due_day',

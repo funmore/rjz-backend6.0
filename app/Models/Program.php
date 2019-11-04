@@ -44,6 +44,9 @@ class Program extends Model
     public function Pvlog(){
         return $this->hasMany('App\Models\Pvlog','program_id','id');
     }
+    public function ProgramLog(){
+        return $this->hasMany('App\Models\ProgramLog','program_id','id');
+    }
     public function PostProgram(){
         return $this->hasOne('App\Models\PostProgram','program_id','id');
     }

@@ -22,9 +22,9 @@ class WeixinMiddleware
         $t = $request->header('Time');
         $s = $request->header('Sha');
         $curtime = time();
-        
 
 
+        ;
         if (!empty($token) && !empty($t) && !empty($s) && $curtime-$t < 300 && sha1($key.$t) == $s) {
             echo "{'success':true}";
             return $next($request);
