@@ -81,12 +81,12 @@ class WorkflowController extends Controller
                 case '软件测试条件准入审查阶段':
                     $node_task=[
                         '0'=>['task'=>'环境需求沟通','before_node_id'=>$node['id'],'is_must_choose'=>'否','is_must_complete'=>'否'],
-                        '1'=>['task'=>'接受正式版文档','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
-                        '2'=>['task'=>'接受正式版程序','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
+                        '1'=>['task'=>'接受正式版文档','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'是'],
+                        '2'=>['task'=>'接受正式版程序','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'是'],
                         '3'=>['task'=>'项目建立','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'是'],
                         '4'=>['task'=>'任务书/需求评审/代码走查问题闭合确认','before_node_id'=>$node['id'],'is_must_choose'=>'否','is_must_complete'=>'否'],
                         '5'=>['task'=>'完成静态测试','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否'],
-                        '6'=>['task'=>'需求文档齐套性/标准符合性/完整性(详细程度)','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'否']
+                        '6'=>['task'=>'需求文档齐套性/标准符合性/完整性(详细程度)','before_node_id'=>$node['id'],'is_must_choose'=>'是','is_must_complete'=>'是']
                     ];
                     foreach($node_task as $key=>$item){
                         $ptr_note = new ProgramTeamRoleTask();

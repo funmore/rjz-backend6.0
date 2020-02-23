@@ -4,13 +4,14 @@ namespace App\Http\Controllers\api;
 
 use Illuminate\Http\Request;
 
-use Storage;
+// use Storage;
 use File;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Models\Token;
 use App\Models\FileProgram;
 use App\Models\Program;
+use Illuminate\Support\Facades\Storage;
 
 
 
@@ -137,8 +138,8 @@ class FileProgramController extends Controller
         $headers=[
             'Content-Type' => mime_content_type( $pathToFile )
         ];
-        return response()->downloadEx($pathToFile,$file_program['name'],$headers);
-        //return response()->download($pathToFile,$file_program['name']);
+        //return response()->downloadEx($pathToFile,$file_program['name'],$headers);
+        return Storage::download($pathToFile, $file_program['name'], $headers);
     }
 
     /**
